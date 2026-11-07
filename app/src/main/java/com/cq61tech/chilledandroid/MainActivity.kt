@@ -93,13 +93,8 @@ class MainActivity : Activity(), TextureView.SurfaceTextureListener {
         uiBuilt = true
         hideSystemBars()
 
-        val alt = BitmapFactory.decodeResource(
-            resources, R.drawable.alttab,
-            BitmapFactory.Options().apply { inScaled = false }
-        )
-
         val tex = AspectTextureView(this).apply { surfaceTextureListener = this@MainActivity }
-        val view = ChilledView(this, shot!!, alt).apply { clock = { clockMs() } }
+        val view = ChilledView(this, shot!!).apply { clock = { clockMs() } }
         texture = tex
         chilled = view
 

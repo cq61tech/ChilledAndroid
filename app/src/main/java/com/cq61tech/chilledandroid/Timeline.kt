@@ -18,12 +18,34 @@ object Timeline {
     const val PHASE1_END = 438     // 14.60 sn
     const val PHASE2_END = 585     // 19.50 sn
 
-    // Faz 3: alt+tab ekrani (video iceriginde de 20.73 sn'de baslar)
-    const val ALTTAB = 622         // 20.73 sn
-    const val ALT_FADE_MS = 300
+    // Faz 3: Win10 gorev gorunumu (alt+tab). Bu andan itibaren videonun kendisi gorunur
+    // (zoom-out, secimin saga kaymasi, BSOD zoom-in videodan birebir gelir);
+    // sadece soldaki kucuk pencerenin icine bizim ekran goruntusu cizilir.
+    const val ALTTAB = 622         // 20.73 sn: videoda Win10 ekrani baslar
+    const val OVERLAY_START = 623  // 1 kare korumali gecis (video kare gecikmesi icin)
+    const val OVERLAY_END = 663    // 22.1 sn: bundan sonra pencere yok (BSOD zoom-in)
 
-    // Faz 4: video (BSOD / hata pencereleri) bu andan itibaren gorunur
-    const val VIDEO_START_MS = 23000
+    // Videonun ekranda gorunen karesi saatten ne kadar geride kalir (ms). Ayar icin.
+    const val VIDEO_LATENCY_MS = 0
+
+    // Sol pencerenin (iki sutun) videodaki (854x480) konumu: kare 622'den baslayarak
+    // her kare icin sol, ust, sag, alt. Olculerek alindi (zoom-out hareketi).
+    val ALT_RECTS = intArrayOf(
+        72, 97, 562, 380,    // 622
+        86, 119, 512, 366,   // 623
+        94, 134, 472, 350,   // 624
+        100, 143, 442, 338,  // 625
+        106, 150, 422, 331,  // 626
+        109, 156, 408, 326,  // 627
+        112, 160, 396, 322,  // 628
+        114, 163, 387, 318,  // 629
+        115, 166, 380, 316,  // 630
+        116, 168, 374, 314,  // 631
+        118, 168, 370, 312,  // 632
+        118, 170, 367, 311,  // 633
+        118, 170, 365, 310,  // 634
+    )
+    val ALT_REST = intArrayOf(118, 170, 364, 310)   // 635-663 arasi sabit
 
     val A = intArrayOf(
         126, 129, 133, 136, 140, 143, 147, 150, 155, 158, 162, 165,

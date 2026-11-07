@@ -4,5 +4,5 @@ Ikona basinca root ile ekran goruntusu alir, Chilled Windows animasyonunu o goru
 
 - Root gerekir (`su -c screencap`).
 - Zaman cizelgesi: `Timeline.kt` (kare numaralari orijinal exe'den).
-- Ses ve ana saat: `res/raw/chilled.mp4`.
+- Ses, ana saat ve 20.7 sn sonrasi gecis (zoom-out/zoom-in) : `res/raw/chilled.mp4`.
 - Derleme: GitHub Actions (`.github/workflows/build.yml`) -> Artifacts -> ChilledAndroid-apk

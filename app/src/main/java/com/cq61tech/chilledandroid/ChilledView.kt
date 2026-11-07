@@ -13,11 +13,16 @@ import kotlin.math.sin
 
 /**
  * Tum efektleri cizen view. Zamani [clock] (ms) verir; kare = ms / 33.33333.
+ *
+ *  0.0 - 14.6 sn : tam ekran, ayna cevirme + donus/zoom        (opak)
+ * 14.6 - 20.77 sn: iki sutun, sol/sag ayri ayna cevirme          (opak)
+ * 20.77 - 22.1 sn: SEFFAF; altta video (zoom-out / alt+tab / BSOD zoom-in) oynar,
+ *                  sadece sol pencerenin icine ekran goruntusu cizilir
+ * sonrasi        : hicbir sey cizilmez, video gorunur
  */
 class ChilledView(
     context: Context,
     private val shot: Bitmap,
-    private val alt: Bitmap,
 ) : View(context) {
 
     var clock: () -> Int = { 0 }
@@ -28,10 +33,6 @@ class ChilledView(
     private var videoTop = 0f
     private var videoH = 0f
 
-    // alttab.jpg (854x480) icindeki sol kucuk resimdeki iki sutun
-    private val altLeft = RectF(118f, 169f, 241f, 310f)
-    private val altRight = RectF(243f, 169f, 365f, 310f)
-
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         videoH = w * 480f / 854f
         videoTop = (h - videoH) / 2f
@@ -40,24 +41,23 @@ class ChilledView(
 
     override fun onDraw(c: Canvas) {
         val t = clock()
-        if (t >= Timeline.VIDEO_START_MS) {
-            // Seffaf birak: alttaki video gorunsun. Tekrar cizmeye gerek yok.
-            return
-        }
-        val frame = (t / Timeline.FRAME_MS).toInt()
         val w = width.toFloat()
         val h = height.toFloat()
-        c.drawColor(Color.BLACK)
+        val frame = (t / Timeline.FRAME_MS).toInt()
 
         when {
-            frame < Timeline.PHASE1_END -> drawPhase1(c, frame, w, h)
-            else -> {
+            frame < Timeline.PHASE1_END -> {
+                c.drawColor(Color.BLACK)
+                drawPhase1(c, frame, w, h)
+            }
+            frame < Timeline.OVERLAY_START -> {
+                c.drawColor(Color.BLACK)
                 drawPhase2(c, frame, w, h)
-                if (frame >= Timeline.ALTTAB) {
-                    val a = ((t - Timeline.ALTTAB * Timeline.FRAME_MS) / Timeline.ALT_FADE_MS)
-                        .toFloat().coerceIn(0f, 1f)
-                    drawAltTab(c, w, h, a)
-                }
+            }
+            else -> {
+                val vf = ((t - Timeline.VIDEO_LATENCY_MS) / Timeline.FRAME_MS).toInt()
+                if (vf > Timeline.OVERLAY_END) return   // bitti, video kendi basina
+                drawAltWindow(c, vf, w)
             }
         }
         postInvalidateOnAnimation()
@@ -101,19 +101,26 @@ class ChilledView(
         c.restore()
     }
 
-    /** Alt+Tab ekrani: soldaki kucuk resimlere bizim ekran goruntusu konur */
-    private fun drawAltTab(c: Canvas, w: Float, h: Float, alpha: Float) {
-        c.saveLayerAlpha(0f, 0f, w, h, (alpha * 255f).toInt())
-        c.drawColor(Color.BLACK)
-        dst.set(0f, videoTop, w, videoTop + videoH)
-        c.drawBitmap(alt, null, dst, paint)
+    /** Videodaki sol pencerenin (zoom-out ile kuculen) icine iki sutun ekran goruntusu */
+    private fun drawAltWindow(c: Canvas, frame: Int, w: Float) {
+        val i = frame - Timeline.ALTTAB
+        val r = if (i >= 0 && i * 4 + 3 < Timeline.ALT_RECTS.size) {
+            Timeline.ALT_RECTS.copyOfRange(i * 4, i * 4 + 4)
+        } else {
+            Timeline.ALT_REST
+        }
         val sx = w / 854f
         val sy = videoH / 480f
-        for (r in arrayOf(altLeft, altRight)) {
-            dst.set(r.left * sx, videoTop + r.top * sy, r.right * sx, videoTop + r.bottom * sy)
-            c.drawBitmap(shot, null, dst, paint)
-        }
-        c.restore()
+        val x0 = r[0] * sx
+        val y0 = videoTop + r[1] * sy
+        val x1 = r[2] * sx
+        val y1 = videoTop + r[3] * sy
+        val mid = (x0 + x1) / 2f
+        val g = sx
+        dst.set(x0, y0, mid - g, y1)
+        c.drawBitmap(shot, null, dst, paint)
+        dst.set(mid + g, y0, x1, y1)
+        c.drawBitmap(shot, null, dst, paint)
     }
 
     /**
